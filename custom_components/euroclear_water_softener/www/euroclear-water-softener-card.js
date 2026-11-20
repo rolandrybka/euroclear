@@ -5,6 +5,30 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
     this._confirming = false;
     this._sending = false;
     this._error = "";
+    this._stateKey = null;
+    this.shadowRoot.addEventListener("click", (event) => {
+      const target = event.target;
+      const button = target.closest && target.closest("button");
+      if (button && button.classList.contains("action")) {
+        this._confirming = true;
+        this._error = "";
+        this._render();
+      } else if (button && button.classList.contains("cancel")) {
+        this._confirming = false;
+        this._error = "";
+        this._render();
+      } else if (button && button.classList.contains("confirm")) {
+        this._startRegeneration();
+      } else if (
+        target.classList &&
+        target.classList.contains("scrim") &&
+        !this._sending
+      ) {
+        this._confirming = false;
+        this._error = "";
+        this._render();
+      }
+    });
     this.shadowRoot.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && this._confirming && !this._sending) {
         this._confirming = false;
@@ -22,15 +46,40 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
       title: config.title,
       subtitle: config.subtitle || "Midnight 25 HF P&P",
       regeneration_button: config.regeneration_button,
+      stage_sensor: config.stage_sensor || "",
       metrics: config.metrics || [],
       alerts: config.alerts || [],
     };
+    this._stateKey = null;
     this._render();
   }
 
   set hass(hass) {
     this._hass = hass;
-    this._render();
+    const entities = this._config
+      ? this._config.metrics
+          .map((metric) => metric.entity)
+          .concat(
+            this._config.alerts.map((alert) => alert.entity),
+            [this._config.regeneration_button, this._config.stage_sensor],
+          )
+      : [];
+    const stateKey = JSON.stringify({
+      language: hass.language,
+      states: entities.map((entityId) => {
+        const state = entityId && hass.states[entityId];
+        return state
+          ? {
+              state: state.state,
+              attributes: state.attributes,
+            }
+          : null;
+      }),
+    });
+    if (stateKey !== this._stateKey) {
+      this._stateKey = stateKey;
+      this._render();
+    }
   }
 
   getCardSize() {
@@ -73,6 +122,8 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
           noMetrics: "A kártya beállításainál adj meg szenzorokat.",
           noAlerts: "Nincs aktív riasztás",
           start: "Regenerálás indítása",
+          stageTitle: "Regenerálási ciklus",
+          steps: ["Visszamosás", "Sóoldat", "Utántöltés", "Öblítés"],
           confirmTitle: "Elindítod a regenerálást?",
           confirmMessage:
             "Ez azonnal elindít egy kényszerregenerálási ciklust, amely 5–6 órán át tarthat. Biztosan folytatod?",
@@ -84,6 +135,8 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
           noMetrics: "Add metrics in the card configuration.",
           noAlerts: "No active alerts",
           start: "Start forced regeneration",
+          stageTitle: "Regeneration cycle",
+          steps: ["Backwash", "Brine", "Refill", "Rinse"],
           confirmTitle: "Start regeneration?",
           confirmMessage:
             "This starts a forced regeneration cycle, which may take 5–6 hours. Make sure you want to continue.",
@@ -120,8 +173,34 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
       })
       .join("");
 
-    const button = this._state(this._config.regeneration_button);
-    const unavailable = !button || button.state === "unavailable";
+    const stage = this._state(this._config.stage_sensor);
+    const stationCode = stage
+      ? Number(stage.attributes.station_code)
+      : NaN;
+    const activeStep = [1, 2, 3, 4].indexOf(stationCode);
+    const stagePanel = stage
+      ? `<section class="stage">
+          <div class="stage-heading">
+            <ha-icon icon="mdi:water-sync"></ha-icon>
+            <span>${text.stageTitle}</span>
+          </div>
+          <div class="stage-current">${this._escape(stage.state)}</div>
+          ${
+            activeStep >= 0
+              ? `<div class="steps">${text.steps
+                  .map(
+                    (label, index) =>
+                      `<div class="step ${index <= activeStep ? "complete" : ""} ${
+                        index === activeStep ? "current" : ""
+                      }"><span class="step-dot">${
+                        index < activeStep ? "✓" : index + 1
+                      }</span><span>${label}</span></div>`,
+                  )
+                  .join("")}</div>`
+              : ""
+          }
+        </section>`
+      : "";
     const alerts = activeAlerts
       ? `<div class="alerts">${activeAlerts}</div>`
       : `<div class="all-clear"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${text.noAlerts}</span></div>`;
@@ -181,6 +260,18 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
         .all-clear { color: var(--success-color, #398a63); }
         .alert { color: var(--error-color, #c33); }
         .all-clear ha-icon, .alert ha-icon { --mdc-icon-size: 19px; }
+        .stage { margin-top: 16px; padding: 14px; border: 1px solid var(--divider-color);
+          border-radius: 15px; background: var(--secondary-background-color, rgba(127, 127, 127, .06)); }
+        .stage-heading { display: flex; align-items: center; gap: 8px; color: var(--secondary-text-color); font-size: 12px; }
+        .stage-heading ha-icon { color: var(--accent-color, #35a9ba); --mdc-icon-size: 18px; }
+        .stage-current { margin-top: 7px; font-size: 16px; font-weight: 650; }
+        .steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 15px; }
+        .step { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--secondary-text-color); text-align: center; font-size: 10px; }
+        .step-dot { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--divider-color);
+          border-radius: 50%; font-size: 11px; }
+        .step.complete .step-dot { color: var(--primary-color); border-color: var(--primary-color); }
+        .step.current { color: var(--primary-text-color); font-weight: 650; }
+        .step.current .step-dot { color: #fff; background: var(--primary-color); }
         .action { width: 100%; margin-top: 18px; padding: 12px 16px; border: 0; border-radius: 13px;
           color: #fff; background: linear-gradient(110deg, #247da9, #35a9ba);
           font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
@@ -223,7 +314,8 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
           </header>
           <div class="metrics">${metrics || `<div class="empty">${text.noMetrics}</div>`}</div>
           ${alerts}
-          <button class="action" type="button" ${unavailable || this._sending ? "disabled" : ""}>
+          ${stagePanel}
+          <button class="action" type="button" ${this._sending ? "disabled" : ""}>
             <ha-icon icon="mdi:water-sync"></ha-icon>
             ${text.start}
           </button>
@@ -231,29 +323,8 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
       </ha-card>
       ${dialog}`;
 
-    this.shadowRoot.querySelector(".action").addEventListener("click", () => {
-      this._confirming = true;
-      this._error = "";
-      this._render();
-    });
-
     if (this._confirming) {
-      this.shadowRoot.querySelector(".cancel").addEventListener("click", () => {
-        this._confirming = false;
-        this._error = "";
-        this._render();
-      });
       this.shadowRoot.querySelector(".cancel").focus();
-      this.shadowRoot.querySelector(".confirm").addEventListener("click", () => {
-        this._startRegeneration();
-      });
-      this.shadowRoot.querySelector(".scrim").addEventListener("click", (event) => {
-        if (event.target.classList.contains("scrim") && !this._sending) {
-          this._confirming = false;
-          this._error = "";
-          this._render();
-        }
-      });
     }
   }
 

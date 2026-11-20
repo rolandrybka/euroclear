@@ -22,17 +22,20 @@ not ask for or store your web-app password.
    category.
 2. Install **Euroclear Water Softener** and restart Home Assistant.
 3. Copy `custom_components/euroclear_water_softener/www/euroclear-water-softener-card.js`
-   from the installed integration to the Home Assistant configuration's `www`
-   directory (create it if needed).
-4. In **Settings → Dashboards → Resources**, add `/local/euroclear-water-softener-card.js`
-   as a JavaScript module resource. If the Resources menu is not available, open
-   the dashboard in edit mode and manage resources from its menu.
+   from the HA `custom_components/euroclear_water_softener/www` directory to
+   `/config/www/euroclear-water-softener-card.js` (create `www` if needed).
+4. In the dashboard's **Resources** page, add `/local/euroclear-water-softener-card.js`
+   as a **JavaScript module**. The `/local/` URL maps to the HA configuration's
+   `www` directory; it is not a `/hacsfiles/` URL. If Resources is not listed,
+   enable **Advanced mode** in your user profile, then open the dashboard
+   management menu.
 5. Go to **Settings → Devices & services → Add integration** and select
    **Euroclear Water Softener**.
 6. Enter the access token and, if prompted, choose your water softener.
 
 When updating the integration, copy the updated card JavaScript to `www` again
-if the card file changed in that release. Then reload the browser dashboard.
+if the card file changed in that release. Then hard-refresh the browser
+dashboard (Ctrl+F5).
 
 ### Manual
 
@@ -46,10 +49,11 @@ as described above, and add the integration from **Settings → Devices & servic
 
 The integration creates sensors for flow rate, remaining water production,
 daily and weekly water consumption, period production, operation day,
-remaining days, regeneration count, and regeneration-stage timers. It also
-creates binary sensors for salt, resin, filter, leak, and device fault alarms.
-Values are exposed as reported by the API; no volume units are assumed because
-the API reports a separate device-specific volume-unit code.
+remaining days, regeneration count, regeneration-stage timers, and a
+localized current regeneration stage. It also creates binary sensors for salt,
+resin, filter, leak, and device fault alarms. Values are exposed as reported by
+the API; no volume units are assumed because the API reports a separate
+device-specific volume-unit code.
 
 The **Start forced regeneration** button starts a regeneration cycle
 immediately. The custom Lovelace card below asks for confirmation first. The
@@ -68,6 +72,7 @@ type: custom:euroclear-water-softener-card
 title: Vízlágyító
 subtitle: Euroclear Midnight 25 HF P&P
 regeneration_button: button.euroclear_midnight_25_hf_pp_start_forced_regeneration
+stage_sensor: sensor.euroclear_midnight_25_hf_pp_regeneration_stage
 metrics:
   - entity: sensor.euroclear_midnight_25_hf_pp_flow_rate
     label: Átfolyás
@@ -88,11 +93,17 @@ alerts:
     label: Vízszivárgás
 ```
 
-The card shows configured metrics, active alerts, and a forced-regeneration
-control. Pressing the control opens a confirmation dialog describing the
+The card shows configured metrics, active alerts, the current stage and a
+four-step progress display during backwash, brine draw, refill, and rinse.
+Pressing the regeneration control opens a confirmation dialog describing the
 expected 5–6 hour cycle before it sends the command. Cancelling or clicking
 outside the dialog does not start regeneration. Sensor history remains
 available in standard Home Assistant history and statistics cards.
+
+The button stays clickable even if its configured entity ID is incorrect;
+pressing it then shows an error instead of silently disabling the control.
+Check the entity IDs in **Settings → Devices & services → Entities** if the
+command cannot be sent.
 
 ## Notes
 
