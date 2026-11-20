@@ -11,7 +11,13 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .api import WaterDeviceApi, WaterDeviceApiError
-from .const import CONF_DEVICE_ID, CONF_TOKEN, DOMAIN
+from .const import (
+    CONF_DEVICE_ID,
+    CONF_SCAN_INTERVAL,
+    CONF_TOKEN,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
 
 PLATFORMS = ["sensor", "binary_sensor", "button"]
 _LOGGER = logging.getLogger(__name__)
@@ -25,6 +31,7 @@ class WaterDeviceCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         api: WaterDeviceApi,
         device_id: str,
+        scan_interval: int,
     ) -> None:
         self.api = api
         self.device_id = device_id
@@ -32,7 +39,7 @@ class WaterDeviceCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(seconds=scan_interval),
         )
 
     async def _async_update_data(self):
@@ -54,10 +61,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass,
         api,
         entry.data[CONF_DEVICE_ID],
+        entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
     )
     await coordinator.async_config_entry_first_refresh()
+    model = coordinator.data["protocolData"].get("deviceModel")
+    if model is not None:
+        try:
+            settings = await api.async_get_device_settings(
+                entry.data[CONF_DEVICE_ID],
+                int(model),
+            )
+        except WaterDeviceApiError as err:
+            _LOGGER.warning("Unable to load water softener model features: %s", err)
+            coordinator.supports_vacation = False
+        else:
+            coordinator.supports_vacation = settings.get("vacationPattern") is True
+    else:
+        _LOGGER.warning("Water softener response did not contain a device model")
+        coordinator.supports_vacation = False
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -68,3 +92,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unloaded
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload the integration after its options change."""
+    await hass.config_entries.async_reload(entry.entry_id)

@@ -166,4 +166,5 @@ class RegenerationStageSensor(WaterDeviceEntity, SensorEntity):
         return {
             "station_code": station,
             "is_regenerating": is_regenerating,
+            "supports_vacation": self.coordinator.supports_vacation,
         }

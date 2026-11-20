@@ -1,4 +1,15 @@
 {
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling interval",
+        "description": "How often Home Assistant should fetch device data. The allowed range is 15–3600 seconds.",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  },
   "config": {
     "step": {
       "user": {

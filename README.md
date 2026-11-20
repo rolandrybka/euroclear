@@ -32,6 +32,9 @@ not ask for or store your web-app password.
 5. Go to **Settings → Devices & services → Add integration** and select
    **Euroclear Water Softener**.
 6. Enter the access token and, if prompted, choose your water softener.
+7. Open the integration's **Configure** dialog to change its polling interval.
+   The default is 60 seconds; allowed values are 15–3600 seconds. A shorter
+   interval makes more cloud API requests.
 
 When updating the integration, copy the updated card JavaScript to `www` again
 if the card file changed in that release. Then hard-refresh the browser
@@ -57,9 +60,15 @@ device-specific volume-unit code.
 
 The **Start forced regeneration** button starts a regeneration cycle
 immediately. The custom Lovelace card below asks for confirmation first. The
-integration's regular Home Assistant button entity remains directly callable
-from other cards, automations, and service calls; those interfaces do not show
-the card's confirmation dialog.
+Home Assistant button entities remain directly callable from other cards,
+automations, and service calls; those interfaces do not show the card's
+confirmation dialog.
+
+The card shows actions based on the reported device stage: while a regeneration
+stage is active it offers **Advance to next stage**; while idle it offers
+forced regeneration and, if supported by the model, holiday mode. When the
+device is in holiday mode it offers an exit action. The card confirms each
+operation before sending it.
 
 ## Lovelace card
 
@@ -72,6 +81,9 @@ type: custom:euroclear-water-softener-card
 title: Vízlágyító
 subtitle: Euroclear Midnight 25 HF P&P
 regeneration_button: button.euroclear_midnight_25_hf_pp_start_forced_regeneration
+advance_button: button.euroclear_midnight_25_hf_pp_advance_regeneration_stage
+vacation_button: button.euroclear_midnight_25_hf_pp_enable_vacation_mode
+exit_vacation_button: button.euroclear_midnight_25_hf_pp_exit_vacation_mode
 stage_sensor: sensor.euroclear_midnight_25_hf_pp_regeneration_stage
 metrics:
   - entity: sensor.euroclear_midnight_25_hf_pp_flow_rate
@@ -95,15 +107,16 @@ alerts:
 
 The card shows configured metrics, active alerts, the current stage and a
 four-step progress display during backwash, brine draw, refill, and rinse.
-Pressing the regeneration control opens a confirmation dialog describing the
-expected 5–6 hour cycle before it sends the command. Cancelling or clicking
-outside the dialog does not start regeneration. Sensor history remains
-available in standard Home Assistant history and statistics cards.
+During a running stage it offers the app's **Advance to next stage** action;
+while idle it offers forced regeneration and (if supported by the model)
+holiday mode. When the device is in holiday mode, it offers the exit action.
+Every operation opens a confirmation dialog. Cancelling or clicking outside
+the dialog does not send the command. Sensor history remains available in
+standard Home Assistant history and statistics cards.
 
-The button stays clickable even if its configured entity ID is incorrect;
-pressing it then shows an error instead of silently disabling the control.
-Check the entity IDs in **Settings → Devices & services → Entities** if the
-command cannot be sent.
+Replace every sample entity ID with its actual ID from **Settings → Devices &
+services → Entities**. If an action fails, check the entity ID and Home
+Assistant logs.
 
 ## Notes
 

@@ -113,3 +113,40 @@ class WaterDeviceApi:
             params={"id": device_id},
             json_data={},
         )
+
+    async def async_advance_regeneration(self, device_id: str) -> None:
+        """Advance the running regeneration cycle to its next stage."""
+        await self.async_force_regeneration(device_id)
+
+    async def async_set_vacation_mode(self, device_id: str) -> None:
+        """Enable the device's vacation mode."""
+        await self._async_request(
+            "POST",
+            "/api/run-lucky/device/app/device-control/change-vacation",
+            params={"id": device_id},
+            json_data={},
+        )
+
+    async def async_exit_vacation_mode(self, device_id: str) -> None:
+        """Exit the device's vacation mode."""
+        await self._async_request(
+            "POST",
+            "/api/run-lucky/device/app/device-control/exit-vacation",
+            params={"id": device_id},
+            json_data={},
+        )
+
+    async def async_get_device_settings(
+        self,
+        device_id: str,
+        model: int,
+    ) -> Dict[str, Any]:
+        """Return model capabilities used by the app."""
+        result = await self._async_request(
+            "GET",
+            "/api/run-lucky/device/app/device-lookup/get-device-model-setting",
+            params={"deviceId": device_id, "model": model},
+        )
+        if not isinstance(result, dict):
+            raise WaterDeviceApiError("The device settings response was invalid")
+        return result

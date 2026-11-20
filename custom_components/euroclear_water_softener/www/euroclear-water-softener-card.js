@@ -6,19 +6,24 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
     this._sending = false;
     this._error = "";
     this._stateKey = null;
+    this._actions = [];
+    this._pendingAction = null;
     this.shadowRoot.addEventListener("click", (event) => {
       const target = event.target;
       const button = target.closest && target.closest("button");
-      if (button && button.classList.contains("action")) {
-        this._confirming = true;
-        this._error = "";
-        this._render();
+      if (button && button.dataset.action !== undefined) {
+        this._pendingAction = this._actions[Number(button.dataset.action)];
+        if (this._pendingAction) {
+          this._confirming = true;
+          this._error = "";
+          this._render();
+        }
       } else if (button && button.classList.contains("cancel")) {
         this._confirming = false;
         this._error = "";
         this._render();
       } else if (button && button.classList.contains("confirm")) {
-        this._startRegeneration();
+        this._runConfirmedAction();
       } else if (
         target.classList &&
         target.classList.contains("scrim") &&
@@ -46,6 +51,9 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
       title: config.title,
       subtitle: config.subtitle || "Midnight 25 HF P&P",
       regeneration_button: config.regeneration_button,
+      advance_button: config.advance_button || "",
+      vacation_button: config.vacation_button || "",
+      exit_vacation_button: config.exit_vacation_button || "",
       stage_sensor: config.stage_sensor || "",
       metrics: config.metrics || [],
       alerts: config.alerts || [],
@@ -61,7 +69,13 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
           .map((metric) => metric.entity)
           .concat(
             this._config.alerts.map((alert) => alert.entity),
-            [this._config.regeneration_button, this._config.stage_sensor],
+            [
+              this._config.regeneration_button,
+              this._config.advance_button,
+              this._config.vacation_button,
+              this._config.exit_vacation_button,
+              this._config.stage_sensor,
+            ],
           )
       : [];
     const stateKey = JSON.stringify({
@@ -122,26 +136,40 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
           noMetrics: "A kártya beállításainál adj meg szenzorokat.",
           noAlerts: "Nincs aktív riasztás",
           start: "Regenerálás indítása",
+          advance: "Következő fázis",
+          vacation: "Holiday mód",
+          exitVacation: "Holiday mód kikapcsolása",
           stageTitle: "Regenerálási ciklus",
           steps: ["Visszamosás", "Sóoldat", "Utántöltés", "Öblítés"],
-          confirmTitle: "Elindítod a regenerálást?",
-          confirmMessage:
-            "Ez azonnal elindít egy kényszerregenerálási ciklust, amely 5–6 órán át tarthat. Biztosan folytatod?",
+          confirm: "Biztosan folytatod?",
+          startMessage: "Ez azonnal elindít egy regenerálási ciklust, amely 5–6 órán át tarthat.",
+          advanceMessage: "Ez azonnal továbblépteti a vízlágyítót a regenerálás következő fázisára.",
+          vacationMessage: "Ez bekapcsolja a vízlágyító holiday módját.",
+          exitVacationMessage: "Ez kikapcsolja a holiday módot.",
           cancel: "Mégse",
           sending: "Küldés…",
+          sendError:
+            "A parancs küldése nem sikerült. Ellenőrizd az entitásazonosítót és a Home Assistant naplóját.",
         }
       : {
           title: "Euroclear water softener",
           noMetrics: "Add metrics in the card configuration.",
           noAlerts: "No active alerts",
           start: "Start forced regeneration",
+          advance: "Advance to next stage",
+          vacation: "Holiday mode",
+          exitVacation: "Exit holiday mode",
           stageTitle: "Regeneration cycle",
           steps: ["Backwash", "Brine", "Refill", "Rinse"],
-          confirmTitle: "Start regeneration?",
-          confirmMessage:
-            "This starts a forced regeneration cycle, which may take 5–6 hours. Make sure you want to continue.",
+          confirm: "Are you sure you want to continue?",
+          startMessage: "This starts a forced regeneration cycle, which may take 5–6 hours.",
+          advanceMessage: "This immediately advances the softener to the next regeneration stage.",
+          vacationMessage: "This enables the softener's holiday mode.",
+          exitVacationMessage: "This disables holiday mode.",
           cancel: "Cancel",
           sending: "Sending…",
+          sendError:
+            "The command could not be sent. Check the entity ID and Home Assistant logs.",
         };
 
     const metrics = this._config.metrics
@@ -177,6 +205,10 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
     const stationCode = stage
       ? Number(stage.attributes.station_code)
       : NaN;
+    const vacationSupported = !!(
+      stage && stage.attributes.supports_vacation
+    );
+    const isVacation = stationCode === 8;
     const activeStep = [1, 2, 3, 4].indexOf(stationCode);
     const stagePanel = stage
       ? `<section class="stage">
@@ -201,6 +233,63 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
           }
         </section>`
       : "";
+    this._actions = [];
+    if (stationCode === 0 || !Number.isFinite(stationCode)) {
+      this._actions.push({
+        entity: this._config.regeneration_button,
+        label: text.start,
+        message: text.startMessage,
+      });
+      if (
+        stationCode === 0 &&
+        vacationSupported &&
+        this._config.vacation_button
+      ) {
+        this._actions.push({
+          entity: this._config.vacation_button,
+          label: text.vacation,
+          message: text.vacationMessage,
+        });
+      }
+    } else if (isVacation) {
+      if (this._config.exit_vacation_button) {
+        this._actions.push({
+          entity: this._config.exit_vacation_button,
+          label: text.exitVacation,
+          message: text.exitVacationMessage,
+        });
+      }
+    } else if (
+      ![9, 10].includes(stationCode) &&
+      this._config.advance_button
+    ) {
+      this._actions.push({
+        entity: this._config.advance_button,
+        label: text.advance,
+        message: text.advanceMessage,
+      });
+    }
+
+    const actionButtons = this._actions
+      .map(
+        (action, index) => `
+          <button class="action" data-action="${index}" type="button" ${
+            this._sending ? "disabled" : ""
+          }>
+            <ha-icon icon="${
+              action.label === text.advance
+                ? "mdi:skip-forward"
+                : action.label === text.vacation
+                  ? "mdi:bag-suitcase"
+                  : action.label === text.exitVacation
+                    ? "mdi:home"
+                    : "mdi:water-sync"
+            }"></ha-icon>
+            ${this._escape(action.label)}
+          </button>`,
+      )
+      .join("");
+
     const alerts = activeAlerts
       ? `<div class="alerts">${activeAlerts}</div>`
       : `<div class="all-clear"><ha-icon icon="mdi:check-circle-outline"></ha-icon><span>${text.noAlerts}</span></div>`;
@@ -208,13 +297,13 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
       ? `<div class="scrim" role="presentation">
           <section class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialog-title">
             <div class="dialog-icon"><ha-icon icon="mdi:water-sync"></ha-icon></div>
-            <h2 id="dialog-title">${text.confirmTitle}</h2>
-            <p>${text.confirmMessage}</p>
+            <h2 id="dialog-title">${this._escape(this._pendingAction.label)}</h2>
+            <p>${this._escape(this._pendingAction.message)} ${text.confirm}</p>
             ${this._error ? `<p class="error" role="alert">${this._escape(this._error)}</p>` : ""}
             <div class="dialog-actions">
               <button class="cancel" type="button" ${this._sending ? "disabled" : ""}>${text.cancel}</button>
               <button class="confirm" type="button" ${this._sending ? "disabled" : ""}>
-                ${this._sending ? text.sending : text.start}
+                ${this._sending ? text.sending : this._escape(this._pendingAction.label)}
               </button>
             </div>
           </section>
@@ -272,7 +361,7 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
         .step.complete .step-dot { color: var(--primary-color); border-color: var(--primary-color); }
         .step.current { color: var(--primary-text-color); font-weight: 650; }
         .step.current .step-dot { color: #fff; background: var(--primary-color); }
-        .action { width: 100%; margin-top: 18px; padding: 12px 16px; border: 0; border-radius: 13px;
+        .action { width: 100%; margin-top: 10px; padding: 12px 16px; border: 0; border-radius: 13px;
           color: #fff; background: linear-gradient(110deg, #247da9, #35a9ba);
           font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
         .action:hover:not(:disabled) { filter: brightness(1.08); }
@@ -315,10 +404,7 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
           <div class="metrics">${metrics || `<div class="empty">${text.noMetrics}</div>`}</div>
           ${alerts}
           ${stagePanel}
-          <button class="action" type="button" ${this._sending ? "disabled" : ""}>
-            <ha-icon icon="mdi:water-sync"></ha-icon>
-            ${text.start}
-          </button>
+          ${actionButtons}
         </div>
       </ha-card>
       ${dialog}`;
@@ -328,17 +414,21 @@ class EuroclearWaterSoftenerCard extends HTMLElement {
     }
   }
 
-  async _startRegeneration() {
+  async _runConfirmedAction() {
+    if (!this._pendingAction) {
+      return;
+    }
     this._sending = true;
     this._error = "";
     this._render();
     try {
       await this._hass.callService("button", "press", {
-        entity_id: this._config.regeneration_button,
+        entity_id: this._pendingAction.entity,
       });
       this._confirming = false;
+      this._pendingAction = null;
     } catch (error) {
-      console.error("Could not start water softener regeneration", error);
+      console.error("Could not run water softener action", error);
       this._error = this._text.sendError;
     } finally {
       this._sending = false;

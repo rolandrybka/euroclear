@@ -1,4 +1,15 @@
 {
+  "options": {
+    "step": {
+      "init": {
+        "title": "Frissítési gyakoriság",
+        "description": "Milyen gyakran kérdezze le a Home Assistant az eszköz adatait. Engedélyezett tartomány: 15–3600 másodperc.",
+        "data": {
+          "scan_interval": "Frissítési idő (másodperc)"
+        }
+      }
+    }
+  },
   "config": {
     "step": {
       "user": {
