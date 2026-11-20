@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect your water softener",
+        "description": "Enter the access token from the waterdevice.net web app. Do not include your username or password.",
+        "data": {
+          "token": "Access token"
+        }
+      },
+      "device": {
+        "title": "Choose a water softener",
+        "data": {
+          "device_id": "Device"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The access token was rejected.",
+      "cannot_connect": "Could not connect to the waterdevice.net API.",
+      "no_devices": "No water softeners were found for this account."
+    },
+    "abort": {
+      "already_configured": "This water softener is already configured."
+    }
+  }
+}

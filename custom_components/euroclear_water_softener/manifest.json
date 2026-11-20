@@ -1,0 +1,10 @@
+{
+  "domain": "euroclear_water_softener",
+  "name": "Euroclear Water Softener",
+  "version": "1.0.1",
+  "documentation": "https://app.waterdevice.net/",
+  "codeowners": [],
+  "requirements": [],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

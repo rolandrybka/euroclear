@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Vízlágyító csatlakoztatása",
+        "description": "Add meg a waterdevice.net webalkalmazásból származó hozzáférési tokent. Felhasználónevet és jelszót ne adj meg.",
+        "data": {
+          "token": "Hozzáférési token"
+        }
+      },
+      "device": {
+        "title": "Vízlágyító kiválasztása",
+        "data": {
+          "device_id": "Eszköz"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "A hozzáférési tokent a szolgáltatás elutasította.",
+      "cannot_connect": "Nem sikerült csatlakozni a waterdevice.net API-hoz.",
+      "no_devices": "Nem található vízlágyító ehhez a fiókhoz."
+    },
+    "abort": {
+      "already_configured": "Ez a vízlágyító már be van állítva."
+    }
+  }
+}
