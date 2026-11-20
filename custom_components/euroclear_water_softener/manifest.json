@@ -1,7 +1,7 @@
 {
   "domain": "euroclear_water_softener",
   "name": "Euroclear Water Softener",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "documentation": "https://app.waterdevice.net/",
   "codeowners": [],
   "requirements": [],
