@@ -1,4 +1,76 @@
 {
+  "entity": {
+    "sensor": {
+      "flow_rate": {
+        "name": "Flow rate"
+      },
+      "remaining_water_production": {
+        "name": "Remaining water production"
+      },
+      "daily_water_consumption": {
+        "name": "Daily water consumption"
+      },
+      "average_weekly_water_consumption": {
+        "name": "Average weekly water consumption"
+      },
+      "period_water_production": {
+        "name": "Water production this period"
+      },
+      "operation_day": {
+        "name": "Operation day"
+      },
+      "days_until_regeneration": {
+        "name": "Days until regeneration"
+      },
+      "regeneration_count": {
+        "name": "Regeneration count"
+      },
+      "backwash_time_remaining": {
+        "name": "Backwash time remaining"
+      },
+      "brine_draw_time_remaining": {
+        "name": "Brine draw time remaining"
+      },
+      "salt_tank_refill_time_remaining": {
+        "name": "Salt tank refill time remaining"
+      },
+      "regeneration_countdown": {
+        "name": "Regeneration countdown"
+      },
+      "regeneration_stage": {
+        "name": "Regeneration stage"
+      }
+    },
+    "binary_sensor": {
+      "salt_shortage_alarm": {
+        "name": "Salt shortage alarm"
+      },
+      "salt_shortage_reminder": {
+        "name": "Salt shortage reminder"
+      },
+      "resin_replacement_reminder": {
+        "name": "Resin replacement reminder"
+      },
+      "filter_material_reminder": {
+        "name": "Filter material reminder"
+      },
+      "water_leakage": {
+        "name": "Water leakage"
+      },
+      "clock_chip_fault": {
+        "name": "Clock chip fault"
+      },
+      "multiple_position_signal_fault": {
+        "name": "Multiple position signal fault"
+      },
+      "no_position_signal_fault": {
+        "name": "No position signal fault"
+      },
+      "memory_error_fault": {
+        "name": "Memory error fault"
+      }
+    }
+  },
   "options": {
     "step": {
       "init": {

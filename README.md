@@ -56,7 +56,10 @@ remaining days, regeneration count, regeneration-stage timers, and a
 localized current regeneration stage. It also creates binary sensors for salt,
 resin, filter, leak, and device fault alarms. Values are exposed as reported by
 the API; no volume units are assumed because the API reports a separate
-device-specific volume-unit code.
+device-specific volume-unit code. Entity names are Hungarian on older Home
+Assistant versions that do not translate entity names; newer versions can use
+the English or Hungarian translations according to the Home Assistant server
+language.
 
 The **Start forced regeneration** button starts a regeneration cycle
 immediately. The custom Lovelace card below asks for confirmation first. The
@@ -104,6 +107,8 @@ alerts:
   - entity: binary_sensor.euroclear_midnight_25_hf_pp_water_leakage
     label: Vízszivárgás
 ```
+
+Replace 'euroclear_midnight_25_hf_pp' with the name of your entity in the previous yaml example.
 
 The card shows configured metrics, active alerts, the current stage and a
 four-step progress display during backwash, brine draw, refill, and rinse.
