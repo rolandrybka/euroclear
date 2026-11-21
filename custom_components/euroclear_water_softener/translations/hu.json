@@ -1,4 +1,76 @@
 {
+  "entity": {
+    "sensor": {
+      "flow_rate": {
+        "name": "Átfolyás"
+      },
+      "remaining_water_production": {
+        "name": "Hátralévő vízmennyiség"
+      },
+      "daily_water_consumption": {
+        "name": "Napi vízfogyasztás"
+      },
+      "average_weekly_water_consumption": {
+        "name": "Heti átlagos vízfogyasztás"
+      },
+      "period_water_production": {
+        "name": "Víztermelés ebben az időszakban"
+      },
+      "operation_day": {
+        "name": "Üzemnap"
+      },
+      "days_until_regeneration": {
+        "name": "Regenerálásig hátralévő napok"
+      },
+      "regeneration_count": {
+        "name": "Regenerálások száma"
+      },
+      "backwash_time_remaining": {
+        "name": "Visszamosásból hátralévő idő"
+      },
+      "brine_draw_time_remaining": {
+        "name": "Sóoldat-beszívásból hátralévő idő"
+      },
+      "salt_tank_refill_time_remaining": {
+        "name": "Sóoldattartály-feltöltésből hátralévő idő"
+      },
+      "regeneration_countdown": {
+        "name": "Regenerálási visszaszámlálás"
+      },
+      "regeneration_stage": {
+        "name": "Regenerálási fázis"
+      }
+    },
+    "binary_sensor": {
+      "salt_shortage_alarm": {
+        "name": "Sóhiányriasztás"
+      },
+      "salt_shortage_reminder": {
+        "name": "Sóhiány-emlékeztető"
+      },
+      "resin_replacement_reminder": {
+        "name": "Gyantacsere-emlékeztető"
+      },
+      "filter_material_reminder": {
+        "name": "Szűrőanyag-ellenőrzési emlékeztető"
+      },
+      "water_leakage": {
+        "name": "Vízszivárgás"
+      },
+      "clock_chip_fault": {
+        "name": "Óraáramköri hiba"
+      },
+      "multiple_position_signal_fault": {
+        "name": "Többállás-jeladó hibája"
+      },
+      "no_position_signal_fault": {
+        "name": "Állásjel hiánya"
+      },
+      "memory_error_fault": {
+        "name": "Memóriahiba"
+      }
+    }
+  },
   "options": {
     "step": {
       "init": {
